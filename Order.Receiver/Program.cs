@@ -17,19 +17,13 @@ namespace Order.Receiver
         private static IConfiguration _configuration;
         private static ServiceBusConfiguration serviceBusConfiguration;
         private static string _storeId;
-        private const string SubscriptionName = "Los_Angeles_Pasadena_store";
-        
+        private const string SubscriptionName = "store";
+
 
         static void Main(string[] args)
         {
-            if (args.Length <= 0)
-            {
-                Console.WriteLine("Inform storeId and hit enter to get NewOrder messages");
-                _storeId = Console.ReadLine();
-            }
-            else
-                _storeId = args[0];
-
+            _storeId = Guid.NewGuid().ToString();
+            
             //https://github.com/Azure-Samples/service-bus-dotnet-manage-publish-subscribe-with-basic-features
 
             _configuration = new ConfigurationBuilder()
@@ -46,8 +40,8 @@ namespace Order.Receiver
             topic.Subscriptions.DeleteByName(SubscriptionName);
 
             if (!topic.Subscriptions.List()
-                   .Any(subscription => subscription.Name
-                       .Equals(SubscriptionName, StringComparison.InvariantCultureIgnoreCase)))
+                    .Any(subscription => subscription.Name
+                        .Equals(SubscriptionName, StringComparison.InvariantCultureIgnoreCase)))
                 topic.Subscriptions
                     .Define(SubscriptionName)
                     .Create();
@@ -59,7 +53,8 @@ namespace Order.Receiver
 
         private static async void ReceiveMessages()
         {
-            var subscriptionClient = new SubscriptionClient(serviceBusConfiguration.ConnectionString, TopicName, SubscriptionName);
+            var subscriptionClient =
+                new SubscriptionClient(serviceBusConfiguration.ConnectionString, TopicName, SubscriptionName);
 
             //by default a 1=1 rule is added when subscription is created, so we need to remove it
             await subscriptionClient.RemoveRuleAsync("$Default");
@@ -82,14 +77,14 @@ namespace Order.Receiver
             Console.WriteLine($"message Label: {message.Label}");
             Console.WriteLine($"message CorrelationId: {message.CorrelationId}");
             var newOrderString = Encoding.UTF8.GetString(message.Body);
-            
+
             var order = JsonConvert.DeserializeObject<NewOrderMessage>(newOrderString);
 
             var _orderToUpsert = new OrderToUpsert();
             _orderToUpsert.OrderId = order.OrderId;
             _orderToUpsert.Products = order.Products;
             _orderToUpsert.Productions = order.ProductionIds;
-            
+
 
             Console.WriteLine("Message Received");
             Console.WriteLine(newOrderString);
@@ -110,9 +105,9 @@ namespace Order.Receiver
                               ?? Policy.NoOpAsync<HttpResponseMessage>();
 
             var context = new Context($"GetSomeData-{Guid.NewGuid()}", new Dictionary<string, object>
-                {
-                    { "url", apiUrl }
-                });
+            {
+                { "url", apiUrl }
+            });
 
             var retries = 0;
             // ReSharper disable once AccessToDisposedClosure
@@ -129,7 +124,7 @@ namespace Order.Receiver
 
             content.Dispose();
 
-            return;                
+            return;
         }
 
         private static Task ExceptionHandle(ExceptionReceivedEventArgs arg)
